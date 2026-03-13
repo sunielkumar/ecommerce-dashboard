@@ -1,65 +1,111 @@
-import Image from "next/image";
+import Link from "next/link";
+import { apiFetch } from "@/lib/api";
+import { formatCurrency } from "@/lib/products";
+import { absoluteUrl } from "@/lib/site";
+import type { Product } from "@/types/product";
 
-export default function Home() {
+export default async function Home() {
+  const products = await apiFetch<Product[]>("/products", {
+    next: { revalidate: 300 },
+  });
+  const categories = [...new Set(products.map((product) => product.category))];
+  const featuredProducts = [...products]
+    .sort((left, right) => right.rating.rate - left.rating.rate)
+    .slice(0, 3);
+  const averagePrice =
+    products.reduce((total, product) => total + product.price, 0) /
+    products.length;
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "CommerceHub Dashboard",
+    description:
+      "An SSR-powered e-commerce dashboard built with Next.js and the Fake Store API.",
+    url: absoluteUrl("/"),
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="space-y-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+
+      <section className="grid gap-8 rounded-[2rem] bg-slate-900 px-8 py-12 text-white shadow-2xl shadow-slate-300/30 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-slate-300">
+            Next.js E-commerce Dashboard
           </p>
+          <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl">
+            Server-rendered products, client-managed cart, and shareable filters.
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
+            Browse catalog data from the Fake Store API, filter products on the
+            client, and keep shopping cart state persisted locally with Redux.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              href="/products"
+              className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
+            >
+              Browse products
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-full border border-slate-600 px-6 py-3 text-sm font-semibold text-white transition hover:border-slate-400 hover:bg-slate-800"
+            >
+              Login for cart access
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+          <div className="rounded-3xl bg-white/10 p-6">
+            <p className="text-sm text-slate-300">Products available</p>
+            <p className="mt-3 text-4xl font-bold">{products.length}</p>
+          </div>
+          <div className="rounded-3xl bg-white/10 p-6">
+            <p className="text-sm text-slate-300">Categories</p>
+            <p className="mt-3 text-4xl font-bold">{categories.length}</p>
+          </div>
+          <div className="rounded-3xl bg-white/10 p-6">
+            <p className="text-sm text-slate-300">Average price</p>
+            <p className="mt-3 text-4xl font-bold">
+              {formatCurrency(averagePrice)}
+            </p>
+          </div>
         </div>
-      </main>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-3">
+        {featuredProducts.map((product) => (
+          <article
+            key={product.id}
+            className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              {product.category}
+            </p>
+            <h2 className="mt-3 text-xl font-semibold text-slate-900">
+              {product.title}
+            </h2>
+            <p className="mt-3 text-sm text-slate-500">
+              Rating {product.rating.rate.toFixed(1)} / 5 from{" "}
+              {product.rating.count} reviews
+            </p>
+            <p className="mt-6 text-2xl font-bold text-slate-900">
+              {formatCurrency(product.price)}
+            </p>
+            <Link
+              href={`/products/${product.id}`}
+              className="mt-6 inline-flex text-sm font-semibold text-slate-900 transition hover:text-slate-700"
+            >
+              View product
+            </Link>
+          </article>
+        ))}
+      </section>
     </div>
   );
 }
