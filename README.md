@@ -1,4 +1,8 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ecommerce-dashboard
+
+A modern e-commerce admin dashboard built with Next.js and TypeScript for managing products, orders, and analytics.
+
+This project is built with [Next.js](https://nextjs.org).
 
 ## Getting Started
 
